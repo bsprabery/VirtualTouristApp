@@ -51,6 +51,62 @@ class Client: NSObject {
             if let data = response.result.value, let jsonDataString = String(data: data, encoding: .utf8) {
                 if let dataFromString = jsonDataString.data(using: .utf8, allowLossyConversion: false) {
                     let json = JSON(data: dataFromString)
+
+                    let photos = json["photos"]
+                    let pages = photos["pages"].intValue
+                    self.setNumberOfPages(number: pages)
+                    
+//                    let pin = self.fetchPin()!
+//                    pin.setValue(UInt32(pages), forKey: "responsePages")
+//                    (UIApplication.shared.delegate as! AppDelegate).saveContext()
+                    
+                    
+                    for photo in json["photos"]["photo"].arrayValue {
+                        let photoID = photo["id"].stringValue
+                        let farm = photo["farm"].stringValue
+                        let server = photo["server"].stringValue
+                        let secret = photo["secret"].stringValue
+                        
+                        let url = "https://farm" + farm + ".staticflickr.com/" + server + "/" + photoID + "_" + secret + ".jpg"
+                        let photoURL = URL(string: url)
+                        
+                        self.photoArray.append(photoURL!)
+                        
+                        self.setPhotos(photoArray: self.photoArray)                        
+                    }
+                }
+            }
+            self.getImageData()
+        }
+    }
+    /*
+     This method retrieves new, random photos for the collection view in PhotoAlbumViewController.
+     It gets random page number based on the number of pages retrieved from the initial network request and uses that as a parameter for this request.
+     
+     Won't work if they click on many pins. Only works on the initial click because the numberOfPages is based on the first network request for the pin which is triggered on pin drop. Better way is to save the number of pages as an attribute of each pin and fetch the number from the context for each pin?
+     */
+    func getNewImages() {
+        let parameters: Parameters = [
+            "method" : "flickr.photos.search",
+            "api_key" : "4b6ac0e76f45d3dadc5c2e0f33935aab",
+            "lat" : "\(getLatitude())",
+            "lon" : "\(getLongitude())",
+            "format" : "json",
+            "nojsoncallback" : "1",
+            "safe_search" : "1",
+            "page" : "\(getRandomNumber())",
+            "per_page" : "12"
+        ]
+        
+        Alamofire.request("https://api.flickr.com/services/rest/", parameters: parameters).validate().responseData { response in
+            guard response.result.isSuccess else {
+                print("There was an error while making the request: \(response.result.error)")
+                return
+            }
+            
+            if let data = response.result.value, let jsonDataString = String(data: data, encoding: .utf8) {
+                if let dataFromString = jsonDataString.data(using: .utf8, allowLossyConversion: false) {
+                    let json = JSON(data: dataFromString)
                     for photo in json["photos"]["photo"].arrayValue {
                         let photoID = photo["id"].stringValue
                         let farm = photo["farm"].stringValue
@@ -63,8 +119,6 @@ class Client: NSObject {
                         self.photoArray.append(photoURL!)
                         
                         self.setPhotos(photoArray: self.photoArray)
-                        print("Photos: \(self.photoArray.count)")
-                        
                     }
                 }
             }
@@ -95,7 +149,6 @@ class Client: NSObject {
                             let entityDescription = NSEntityDescription.entity(forEntityName: "Photo", in: context)
                             let photo = Photo(entity: entityDescription!, insertInto: context)
                             let pin = self.fetchPin()!
-                            print("Latiude: \(pin.latitude)\nLongitude: \(pin.longitude)")
                             photo.setValue(imageData as NSData, forKey: "image")
                             photo.setValue(pin, forKey: "pin")
                             (UIApplication.shared.delegate as! AppDelegate).saveContext()
@@ -121,7 +174,6 @@ class Client: NSObject {
         
         let latitude = getLatitude()
         let longitude = getLongitude()
-        print("Latitude: \(latitude)\n Longitude: \(longitude)")
         let pred = NSCompoundPredicate(format: "latitude == %lf AND longitude == %lf", latitude, longitude)
         fetchRequest.predicate = pred
         
@@ -135,33 +187,41 @@ class Client: NSObject {
         return nil
     }
     
+    func getRandomNumber() -> Int {
+        //Return a random number based on the number provided using arc4random?
+        numberOfPages = getNumberOfPages()
+        
+        let randomNumber = arc4random_uniform(UInt32(numberOfPages)) + 1
+        
+        print(randomNumber)
+        return Int(randomNumber)
+    }
+    
     private override init() {
         latitude = CLLocationDegrees()
         longitude = CLLocationDegrees()
         photoArray = Array<URL>()
+        numberOfPages = Int()
     }
     
     private var latitude: CLLocationDegrees
     private var longitude: CLLocationDegrees
     var photoArray: Array<URL>
+    var numberOfPages: Int
     
     func getLatitude() -> CLLocationDegrees {
-        print("\(self.latitude)")
         return self.latitude
     }
     
     func setLatitude(lat: CLLocationDegrees) -> Void {
-        print("\(lat)")
         self.latitude = lat
     }
     
     func getLongitude() -> CLLocationDegrees {
-        print("\(self.longitude)")
         return self.longitude
     }
     
     func setLongitude(lon: CLLocationDegrees) -> Void {
-        print("\(lon)")
         self.longitude = lon
     }
     
@@ -172,4 +232,13 @@ class Client: NSObject {
     func setPhotos(photoArray: Array<URL>) -> Void {
         self.photoArray = photoArray
     }
+    
+    func getNumberOfPages() -> Int {
+        return self.numberOfPages
+    }
+    
+    func setNumberOfPages(number: Int) {
+        self.numberOfPages = number
+    }
+    
 }

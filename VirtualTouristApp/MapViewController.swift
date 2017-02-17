@@ -22,7 +22,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-    //    deleteData()
+//        deleteData()
         //Check to see if the pins have already been loaded; if they haven't, load them.
         if mapView.annotations.count > 0 {
             print("Pins have already been loaded.")
@@ -83,7 +83,6 @@ class MapViewController: UIViewController, MKMapViewDelegate {
             
             self.mapView.addAnnotation(annotation)
             
-            print("Latitude: \(latitude)\n Longitude: \(longitude)")
             //MARK: Retrieve photos for the pin and save them to the context:
             Client.sharedInstance().getImagesForLocation()
         }
@@ -137,8 +136,8 @@ class MapViewController: UIViewController, MKMapViewDelegate {
             
             Client.sharedInstance().setLatitude(lat: latitude)
             Client.sharedInstance().setLongitude(lon: longitude)
-            print("Latitude: \(latitude)\n Longitude: \(longitude)")
             segueToPhotoAlbumViewController()
+            mapView.deselectAnnotation(annotation, animated: true)
         }
     }
     

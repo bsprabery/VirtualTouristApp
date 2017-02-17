@@ -20,9 +20,10 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     let managedContext = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     var annotationInstance: MKAnnotation?
 
-    var insertedIndexPaths = [IndexPath]()
-    var deletedIndexPaths = [IndexPath]()
-    var updatedIndexPaths = [IndexPath]()
+    var selectedIndexPaths = [IndexPath]()
+    var insertedIndexPaths: [IndexPath]!
+    var deletedIndexPaths: [IndexPath]!
+    var updatedIndexPaths: [IndexPath]!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -128,11 +129,12 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
 
         let cell = collectionView.cellForItem(at: indexPath) as! PhotoCollectionViewCell
+        
         collectionView.allowsMultipleSelection = true
         cell.layer.borderWidth = 2.0
         cell.layer.borderColor = UIColor.blue.cgColor
         
-        deletedIndexPaths.append(indexPath)
+        selectedIndexPaths.append(indexPath)
         updateButtonTitle()
     }
 
@@ -142,14 +144,14 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         cell.layer.borderWidth = 0.0
         cell.layer.borderColor = UIColor.blue.cgColor
         
-        if let index = deletedIndexPaths.index(of: indexPath) {
-            deletedIndexPaths.remove(at: index)
+        if let index = selectedIndexPaths.index(of: indexPath) {
+            selectedIndexPaths.remove(at: index)
             updateButtonTitle()
         }
     }
     
     func updateButtonTitle() {
-        if deletedIndexPaths.count > 0 {
+        if selectedIndexPaths.count > 0 {
             self.newCollectionButton.setTitle("Remove Selected Pictures", for: .normal)
         } else {
             self.newCollectionButton.setTitle("New Collection", for: .normal)
@@ -157,39 +159,43 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     @IBAction func newCollectionButton(_ sender: AnyObject) {
-        print("Deleted Index Paths Array Count: \(deletedIndexPaths.count)")
-        if deletedIndexPaths.count > 0 {
-            for indexPath in deletedIndexPaths {
+        print("Selected Index Paths Array Count: \(selectedIndexPaths.count)")
+        if selectedIndexPaths.count > 0 {
+            for indexPath in selectedIndexPaths {
                 let photo = fetchedResultsController.object(at: indexPath)
                 managedContext.delete(photo)
-                (UIApplication.shared.delegate as! AppDelegate).saveContext()
             }
-            self.collectionView.reloadData()
+            selectedIndexPaths = [IndexPath]()
+            (UIApplication.shared.delegate as! AppDelegate).saveContext()
         } else {
             print("There were no items to delete. Need to trigger download and fetch of new photos.")
-            for indexPath in insertedIndexPaths {
-                let photo = fetchedResultsController.object(at: indexPath)
+            
+            for photo in fetchedResultsController.fetchedObjects as [Photo]! {
                 managedContext.delete(photo)
-                (UIApplication.shared.delegate as! AppDelegate).saveContext()
             }
-            self.collectionView.reloadData()
+             (UIApplication.shared.delegate as! AppDelegate).saveContext()
+            
+            fetchNewPhotos()
         }
+    }
+    
+    func fetchNewPhotos() {
+        Client.sharedInstance().getNewImages()
+   
+
     }
     
     //MARK: NSFetchedResultsControllerDelegate
     //Any change to the context will cause these delegate methods to be called.
     
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        print("Deleted index paths .count = \(deletedIndexPaths.count)")
         insertedIndexPaths = [IndexPath]()
         deletedIndexPaths = [IndexPath]()
         updatedIndexPaths = [IndexPath]()
-        print("Deleted index paths .count = \(deletedIndexPaths.count)")
     }
     
     //Save the index path of each object that is added/deleted/updated as the change is identified by Core Data.
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
-        
         switch type {
         
         //A new Photo has been added. Save the "newIndexPath" so that the cell can be added later.
@@ -201,14 +207,14 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         //A Photo has been deleted. Save the index path, so the corresponding cell can be removed.
         case .delete:
             print("Delete an item.")
-            print("deletedIndexPaths.count = \(deletedIndexPaths.count)")
             deletedIndexPaths.append(indexPath!)
-            print("deletedIndexPaths.count = \(deletedIndexPaths.count)")
             break
+            
         case .update:
             print("Update an item.")
             updatedIndexPaths.append(indexPath!)
             break
+            
         default:
             print("There was an unexpecteed case in the switch statement: CoreDataCollectionViewController - controller didChange.")
         }
@@ -220,24 +226,18 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         collectionView.performBatchUpdates({() -> Void in
             
             for indexPath in self.insertedIndexPaths {
-                print("# of insertedIndexPaths: \(self.insertedIndexPaths.count)")
                 self.collectionView?.insertItems(at: [indexPath])
             }
             
-            //This is the point at which it is deleted from the context and the context is saved again:
             for indexPath in self.deletedIndexPaths {
-                print("# of deletedIndexPaths: \(self.deletedIndexPaths.count)")
                 self.collectionView?.deleteItems(at: [indexPath])
-                print("# of deletedIndexPaths: \(self.deletedIndexPaths.count)")
             }
             
             for indexPath in self.updatedIndexPaths {
-                print("# of updatedIndexPaths: \(self.updatedIndexPaths.count)")
                 self.collectionView?.reloadItems(at: [indexPath])
             }
             
             }, completion: nil)
-
     }
     
 }
