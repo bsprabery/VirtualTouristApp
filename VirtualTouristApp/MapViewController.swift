@@ -22,7 +22,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-//        deleteData()
+
         //Check to see if the pins have already been loaded; if they haven't, load them.
         if mapView.annotations.count > 0 {
             print("Pins have already been loaded.")
@@ -31,23 +31,6 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         }
     }
     
-    func deleteData() {
-        let moc = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        let fetchRequest: NSFetchRequest<Pin> = Pin.fetchRequest()
-        fetchRequest.returnsObjectsAsFaults = false
-        moc.perform {
-        do {
-        let myEntities = try fetchRequest.execute()
-        for myEntity in myEntities {
-        moc.delete(myEntity)
-        }
-        try moc.save()
-        } catch let error {
-        print("Delete Error: \(error.localizedDescription)")
-        }
-        }
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -103,8 +86,9 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     }
     
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+        
+        //Delete the pin from the map and the context if the map is in Edit Mode.
         if inEditMode == true {
-           
             let annotation = view.annotation!
             let latitude = annotation.coordinate.latitude
             let longitude = annotation.coordinate.longitude
@@ -128,6 +112,8 @@ class MapViewController: UIViewController, MKMapViewDelegate {
             }
             
             mapView.removeAnnotation(annotation)
+         
+        //If the map is not in Edit Mode, set the latitude and longitude and segue to the PhotoAblumViewController. Setting the latitude and longitude here is important because future network requests depend on it. Deselect the annotation, so that it will not be selected when you return to the MapViewController.
         } else {
             let annotation = view.annotation!
             annotationInstance = annotation

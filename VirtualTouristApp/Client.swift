@@ -29,7 +29,7 @@ class Client: NSObject {
      Then the getImageData function is called.
      */
     func getImagesForLocation() {
-        
+
         let parameters: Parameters = [
             "method" : "flickr.photos.search",
             "api_key" : "4b6ac0e76f45d3dadc5c2e0f33935aab",
@@ -39,7 +39,7 @@ class Client: NSObject {
             "nojsoncallback" : "1",
             "safe_search" : "1",
             "page" : "1",
-            "per_page" : "12"
+            "per_page" : "18"
         ]
         
         Alamofire.request("https://api.flickr.com/services/rest/", parameters: parameters).validate().responseData { response in
@@ -52,13 +52,15 @@ class Client: NSObject {
                 if let dataFromString = jsonDataString.data(using: .utf8, allowLossyConversion: false) {
                     let json = JSON(data: dataFromString)
 
+                    //Get the number of pages of images from the network response:
                     let photos = json["photos"]
                     let pages = photos["pages"].intValue
                     self.setNumberOfPages(number: pages)
                     
-//                    let pin = self.fetchPin()!
-//                    pin.setValue(UInt32(pages), forKey: "responsePages")
-//                    (UIApplication.shared.delegate as! AppDelegate).saveContext()
+                    //Set the number of pages for the Pin:
+                    let pin = self.fetchPin()!
+                    pin.setValue(pages, forKey: "responsePages")
+                    (UIApplication.shared.delegate as! AppDelegate).saveContext()
                     
                     
                     for photo in json["photos"]["photo"].arrayValue {
@@ -81,11 +83,10 @@ class Client: NSObject {
     }
     /*
      This method retrieves new, random photos for the collection view in PhotoAlbumViewController.
-     It gets random page number based on the number of pages retrieved from the initial network request and uses that as a parameter for this request.
-     
-     Won't work if they click on many pins. Only works on the initial click because the numberOfPages is based on the first network request for the pin which is triggered on pin drop. Better way is to save the number of pages as an attribute of each pin and fetch the number from the context for each pin?
+     It gets a random page number based on the number of pages retrieved from the initial network request (which was saved to the Pin object) and uses that as a parameter for this request.
      */
     func getNewImages() {
+        
         let parameters: Parameters = [
             "method" : "flickr.photos.search",
             "api_key" : "4b6ac0e76f45d3dadc5c2e0f33935aab",
@@ -95,7 +96,7 @@ class Client: NSObject {
             "nojsoncallback" : "1",
             "safe_search" : "1",
             "page" : "\(getRandomNumber())",
-            "per_page" : "12"
+            "per_page" : "18"
         ]
         
         Alamofire.request("https://api.flickr.com/services/rest/", parameters: parameters).validate().responseData { response in
@@ -124,6 +125,7 @@ class Client: NSObject {
             }
             self.getImageData()
         }
+        
     }
 
     /*
@@ -187,13 +189,12 @@ class Client: NSObject {
         return nil
     }
     
+    //Returns a random number based on the number of responsePages associated with the Pin.
     func getRandomNumber() -> Int {
-        //Return a random number based on the number provided using arc4random?
-        numberOfPages = getNumberOfPages()
+        let pin = fetchPin()!
+        let numberOfPages = pin.responsePages
         
         let randomNumber = arc4random_uniform(UInt32(numberOfPages)) + 1
-        
-        print(randomNumber)
         return Int(randomNumber)
     }
     
@@ -240,5 +241,5 @@ class Client: NSObject {
     func setNumberOfPages(number: Int) {
         self.numberOfPages = number
     }
-    
+
 }

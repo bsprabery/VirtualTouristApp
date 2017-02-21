@@ -16,14 +16,19 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     @IBOutlet var mapView: MKMapView!
     @IBOutlet var newCollectionButton: UIButton!
     @IBOutlet var collectionView: UICollectionView!
+    @IBOutlet var noImagesLabel: UILabel!
     
     let managedContext = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     var annotationInstance: MKAnnotation?
-
+    
     var selectedIndexPaths = [IndexPath]()
     var insertedIndexPaths: [IndexPath]!
     var deletedIndexPaths: [IndexPath]!
     var updatedIndexPaths: [IndexPath]!
+    
+    private let minimumItemSpacing: CGFloat = 5
+    private let itemWidth: CGFloat = 130
+   
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -36,6 +41,23 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         
         collectionView.delegate = self
         collectionView.dataSource = self
+       
+        noImagesLabel.isHidden = true
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        let layout = UICollectionViewFlowLayout()
+        layout.itemSize = CGSize(width: itemWidth, height: itemWidth)
+        layout.minimumInteritemSpacing = minimumItemSpacing
+        layout.minimumLineSpacing = minimumItemSpacing
+        layout.sectionInset = UIEdgeInsets(top: 3, left: 3, bottom: 3, right: 3)
+        
+        collectionView.collectionViewLayout = layout
+        
+        noImagesLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+        noImagesLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
     }
     
     func addAnnotation() {
@@ -65,7 +87,7 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                 let pin = result[0]
                 return pin
             } else {
-                fatalError("There are no results from the fetch request; PhotoAlbumVC.")
+                print("There were no pins returned with the request.")
             }
         } catch {
             print("There was an error with performing the fetch request.")
@@ -73,32 +95,46 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         return nil
     }
     
-    lazy var fetchedResultsController: NSFetchedResultsController<Photo> = { () -> NSFetchedResultsController<Photo> in
-        
-        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        let pin: Pin = self.returnPin(annotation: self.annotationInstance!) as! Pin
-
-        let fetchRequest = NSFetchRequest<Photo>(entityName: "Photo")
-        fetchRequest.sortDescriptors = []
-
-        let pred = NSPredicate(format: "pin == %@", pin)
-        fetchRequest.predicate = pred
-
-        let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: context, sectionNameKeyPath: nil, cacheName: nil)
-        fetchedResultsController.delegate = self
-        
-        return fetchedResultsController
-    }()
-    
-    required init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
+    @IBAction func newCollectionButton(_ sender: AnyObject) {
+  
+        if selectedIndexPaths.count > 0 {
+            for indexPath in selectedIndexPaths {
+                let photo = fetchedResultsController.object(at: indexPath)
+                managedContext.delete(photo)
+            }
+            (UIApplication.shared.delegate as! AppDelegate).saveContext()
+            
+            selectedIndexPaths.removeAll()
+            updateButtonTitle()
+            
+        } else {
+            for photo in fetchedResultsController.fetchedObjects as [Photo]! {
+                managedContext.delete(photo)
+                noImagesLabel.isHidden = true
+            }
+            noImagesLabel.isHidden = true
+            
+            (UIApplication.shared.delegate as! AppDelegate).saveContext()
+            Client.sharedInstance().getNewImages()
+        }
     }
+    
+    func updateButtonTitle() {
+        if selectedIndexPaths.count > 0 {
+            self.newCollectionButton.setTitle("Remove Selected Pictures", for: .normal)
+        } else {
+            self.newCollectionButton.setTitle("New Collection", for: .normal)
+        }
+    }
+    
+    //MARK: Collection View Datasource:
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCell", for: indexPath) as! PhotoCollectionViewCell
         let photo = self.fetchedResultsController.object(at: indexPath)
         
-        print(photo)
+        cell.layer.borderWidth = 0.0
+        cell.layer.borderColor = UIColor.clear.cgColor
         
         if let data = photo.value(forKey: "image") as? NSData {
             cell.imageView.image = UIImage(data: data as Data)
@@ -116,33 +152,37 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         }
     }
     
-    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        
-        if fetchedResultsController.sections![section].numberOfObjects > 0 {
-            return fetchedResultsController.sections![section].numberOfObjects
+        if let section = fetchedResultsController.sections?[section] {
+            if section.numberOfObjects == 0 {
+                self.collectionView.backgroundView = noImagesLabel
+                noImagesLabel.isHidden = false
+            }
+            return section.numberOfObjects
         } else {
             return 0
         }
     }
     
+    //MARK: Collection View Delgate: 
+    
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-
+        
         let cell = collectionView.cellForItem(at: indexPath) as! PhotoCollectionViewCell
         
         collectionView.allowsMultipleSelection = true
-        cell.layer.borderWidth = 2.0
+        cell.layer.borderWidth = 3.0
         cell.layer.borderColor = UIColor.blue.cgColor
         
         selectedIndexPaths.append(indexPath)
         updateButtonTitle()
     }
-
+    
     func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
         let cell = collectionView.cellForItem(at: indexPath) as! PhotoCollectionViewCell
         
         cell.layer.borderWidth = 0.0
-        cell.layer.borderColor = UIColor.blue.cgColor
+        cell.layer.borderColor = UIColor.clear.cgColor
         
         if let index = selectedIndexPaths.index(of: indexPath) {
             selectedIndexPaths.remove(at: index)
@@ -150,48 +190,38 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         }
     }
     
-    func updateButtonTitle() {
-        if selectedIndexPaths.count > 0 {
-            self.newCollectionButton.setTitle("Remove Selected Pictures", for: .normal)
-        } else {
-            self.newCollectionButton.setTitle("New Collection", for: .normal)
-        }
-    }
+    //MARK: NSFetchedResultsController and Delegate
     
-    @IBAction func newCollectionButton(_ sender: AnyObject) {
-        print("Selected Index Paths Array Count: \(selectedIndexPaths.count)")
-        if selectedIndexPaths.count > 0 {
-            for indexPath in selectedIndexPaths {
-                let photo = fetchedResultsController.object(at: indexPath)
-                managedContext.delete(photo)
-            }
-            selectedIndexPaths = [IndexPath]()
-            (UIApplication.shared.delegate as! AppDelegate).saveContext()
-        } else {
-            print("There were no items to delete. Need to trigger download and fetch of new photos.")
-            
-            for photo in fetchedResultsController.fetchedObjects as [Photo]! {
-                managedContext.delete(photo)
-            }
-             (UIApplication.shared.delegate as! AppDelegate).saveContext()
-            
-            fetchNewPhotos()
-        }
-    }
+    lazy var fetchedResultsController: NSFetchedResultsController<Photo> = { () -> NSFetchedResultsController<Photo> in
+        
+        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+        let pin: Pin = self.returnPin(annotation: self.annotationInstance!) as! Pin
+        
+        let fetchRequest = NSFetchRequest<Photo>(entityName: "Photo")
+        fetchRequest.sortDescriptors = []
+        
+        let pred = NSPredicate(format: "pin == %@", pin)
+        fetchRequest.predicate = pred
+        
+        let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: context, sectionNameKeyPath: nil, cacheName: nil)
+        fetchedResultsController.delegate = self
+        
+        return fetchedResultsController
+    }()
     
-    func fetchNewPhotos() {
-        Client.sharedInstance().getNewImages()
-   
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+    }
 
-    }
     
-    //MARK: NSFetchedResultsControllerDelegate
     //Any change to the context will cause these delegate methods to be called.
-    
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         insertedIndexPaths = [IndexPath]()
         deletedIndexPaths = [IndexPath]()
         updatedIndexPaths = [IndexPath]()
+        
+        noImagesLabel.isHidden = true
+        newCollectionButton.isEnabled = true
     }
     
     //Save the index path of each object that is added/deleted/updated as the change is identified by Core Data.
@@ -237,7 +267,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
                 self.collectionView?.reloadItems(at: [indexPath])
             }
             
-            }, completion: nil)
+            }, completion: nil
+        )
     }
     
 }
