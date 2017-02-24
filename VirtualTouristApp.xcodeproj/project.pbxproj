@@ -68,6 +68,7 @@
 		38060A821E4BB96100A5514B /* Photo+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "Photo+CoreDataClass.swift"; path = "../Photo+CoreDataClass.swift"; sourceTree = "<group>"; };
 		38060A831E4BB96100A5514B /* Photo+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "Photo+CoreDataProperties.swift"; path = "../Photo+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		38060A8A1E4BBC3600A5514B /* SwiftyJSON.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftyJSON.framework; path = "../../../../Library/Developer/Xcode/DerivedData/VirtualTouristApp-dyhxaskjzklbvobutmonxudfoevs/Build/Products/Debug-iphonesimulator/SwiftyJSON/SwiftyJSON.framework"; sourceTree = "<group>"; };
+		387C4C461E5F7D230023D88C /* VirtualTouristApp v 3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "VirtualTouristApp v 3.xcdatamodel"; sourceTree = "<group>"; };
 		38AAB0031E57B6AE003705E0 /* VirtualTouristApp v2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "VirtualTouristApp v2.xcdatamodel"; sourceTree = "<group>"; };
 		7F30F713E8269CB7911D1CCC /* Pods-VirtualTouristAppTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VirtualTouristAppTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-VirtualTouristAppTests/Pods-VirtualTouristAppTests.release.xcconfig"; sourceTree = "<group>"; };
 		87239556D79E62A455C72229 /* Pods_VirtualTouristAppUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VirtualTouristAppUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -775,10 +776,11 @@
 		38060A4E1E4B7A7900A5514B /* VirtualTouristApp.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				387C4C461E5F7D230023D88C /* VirtualTouristApp v 3.xcdatamodel */,
 				38AAB0031E57B6AE003705E0 /* VirtualTouristApp v2.xcdatamodel */,
 				38060A4F1E4B7A7900A5514B /* VirtualTouristApp.xcdatamodel */,
 			);
-			currentVersion = 38AAB0031E57B6AE003705E0 /* VirtualTouristApp v2.xcdatamodel */;
+			currentVersion = 387C4C461E5F7D230023D88C /* VirtualTouristApp v 3.xcdatamodel */;
 			path = VirtualTouristApp.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

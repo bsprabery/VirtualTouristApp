@@ -115,7 +115,8 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
             noImagesLabel.isHidden = true
             
             (UIApplication.shared.delegate as! AppDelegate).saveContext()
-            Client.sharedInstance().getNewImages()
+            Client.sharedInstance().getNewImageURLs()
+            
         }
     }
     
@@ -127,29 +128,50 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
         }
     }
     
+    func configureCell(cell: PhotoCollectionViewCell, atIndexPath indexPath: IndexPath) {
+        let photo = self.fetchedResultsController.object(at: indexPath)
+        cell.imageView.image = UIImage(named: "placeholder")
+        
+        if photo.image == nil {
+            downloadImageForPhoto(photo: photo, cell: cell)
+        } else {
+            cell.imageView.image = UIImage(data: photo.image! as Data)
+        }
+    }
+    
+    func downloadImageForPhoto(photo: Photo, cell: PhotoCollectionViewCell) {
+        let url = URL(string: photo.imageURL!)
+        let request = NSMutableURLRequest(url: url!)
+        
+        let task = URLSession.shared.dataTask(with: request as URLRequest) { (data, response, error) -> Void in
+            
+            guard let data = data else {
+                return
+            }
+            
+            DispatchQueue.main.async {
+                cell.imageView.image = UIImage(data: data)
+            }
+            
+            let imageData = data as NSData
+            photo.setValue(imageData, forKey: "image")
+            (UIApplication.shared.delegate as! AppDelegate).saveContext()
+        }
+        
+        task.resume()
+    }
+    
     //MARK: Collection View Datasource:
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCell", for: indexPath) as! PhotoCollectionViewCell
-        let photo = self.fetchedResultsController.object(at: indexPath)
         
         cell.layer.borderWidth = 0.0
         cell.layer.borderColor = UIColor.clear.cgColor
         
-        if let data = photo.value(forKey: "image") as? NSData {
-            cell.imageView.image = UIImage(data: data as Data)
-            cell.activityIndicator.stopAnimating()
-            cell.activityIndicator.hidesWhenStopped = true
-        }
+        configureCell(cell: cell, atIndexPath: indexPath)
+        
         return cell
-    }
-    
-    func numberOfSections(in collectionView: UICollectionView) -> Int {
-        if let numberOfSections = self.fetchedResultsController.sections?.count {
-            return numberOfSections
-        } else {
-            return 0
-        }
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -272,3 +294,4 @@ class PhotoAlbumViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
 }
+

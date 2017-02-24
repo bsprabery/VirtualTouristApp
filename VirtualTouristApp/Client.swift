@@ -24,9 +24,8 @@ class Client: NSObject {
     
     /*
      This is triggered when a pin is clicked on the map
-     It makes a request and returns images for the selected location.
-     The images’ URLs are then saved as strings in an array.
-     Then the getImageData function is called.
+     It makes a request and returns image URLs for the selected location.
+     The images’ URLs are then saved as attributes of a Photo.
      */
     func getImagesForLocation() {
 
@@ -70,22 +69,25 @@ class Client: NSObject {
                         let secret = photo["secret"].stringValue
                         
                         let url = "https://farm" + farm + ".staticflickr.com/" + server + "/" + photoID + "_" + secret + ".jpg"
-                        let photoURL = URL(string: url)
                         
-                        self.photoArray.append(photoURL!)
-                        
-                        self.setPhotos(photoArray: self.photoArray)                        
+                        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+                        let entityDescription = NSEntityDescription.entity(forEntityName: "Photo", in: context)
+                        let photo = Photo(entity: entityDescription!, insertInto: context)
+                        let pin = self.fetchPin()!
+                        photo.setValue(pin,forKey: "pin")
+                        photo.setValue(url, forKey: "imageURL")
+                        (UIApplication.shared.delegate as! AppDelegate).saveContext()
                     }
                 }
             }
-            self.getImageData()
         }
     }
     /*
-     This method retrieves new, random photos for the collection view in PhotoAlbumViewController.
+     This method is triggered when the New Collection button is tapped.
+     This method retrieves new, random photo URLs for the collection view in PhotoAlbumViewController.
      It gets a random page number based on the number of pages retrieved from the initial network request (which was saved to the Pin object) and uses that as a parameter for this request.
      */
-    func getNewImages() {
+    func getNewImageURLs() {
         
         let parameters: Parameters = [
             "method" : "flickr.photos.search",
@@ -115,58 +117,17 @@ class Client: NSObject {
                         let secret = photo["secret"].stringValue
                         
                         let url = "https://farm" + farm + ".staticflickr.com/" + server + "/" + photoID + "_" + secret + ".jpg"
-                        let photoURL = URL(string: url)
                         
-                        self.photoArray.append(photoURL!)
-                        
-                        self.setPhotos(photoArray: self.photoArray)
+                        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+                        let entityDescription = NSEntityDescription.entity(forEntityName: "Photo", in: context)
+                        let photo = Photo(entity: entityDescription!, insertInto: context)
+                        let pin = self.fetchPin()!
+                        photo.setValue(pin,forKey: "pin")
+                        photo.setValue(url, forKey: "imageURL")
+                        (UIApplication.shared.delegate as! AppDelegate).saveContext()
                     }
                 }
             }
-            self.getImageData()
-        }
-        
-    }
-
-    /*
-     This method retrieves the photos' URLs from the array created in getImagesForLocation.
-     For each photo URL, a request is made to retrieve the photo.
-     If the request successfully returns a result, the image is converted to NSData.
-     The saveImageToContext function is then called for each photo.
-     */
-    func getImageData() {
-        var photosArray: Array<URL> = getPhotos()
-        
-        for photo in photosArray {
-            Alamofire.request("\(photo)").validate().responseData(completionHandler: { response in
-                guard response.result.isSuccess else {
-                    print("There was an error getting the image data \(response.result.error).")
-                    return
-                }
-                
-                if let image = UIImage(data: response.result.value!, scale: 1.0) {
-                    if let imageData = UIImagePNGRepresentation(image) {
-                        if imageData.count > 0 {
-                            let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-                            let entityDescription = NSEntityDescription.entity(forEntityName: "Photo", in: context)
-                            let photo = Photo(entity: entityDescription!, insertInto: context)
-                            let pin = self.fetchPin()!
-                            photo.setValue(imageData as NSData, forKey: "image")
-                            photo.setValue(pin, forKey: "pin")
-                            (UIApplication.shared.delegate as! AppDelegate).saveContext()
-                        } else {
-                            print("The imageData array is empty.")
-                        }
-                    }
-                }
-            })
-        }
-        
-        if photosArray.count > 0 {
-            photosArray.removeAll()
-            self.setPhotos(photoArray: photosArray)
-        } else {
-            print("There were no photoURLs in the array.")
         }
     }
     
@@ -201,13 +162,11 @@ class Client: NSObject {
     private override init() {
         latitude = CLLocationDegrees()
         longitude = CLLocationDegrees()
-        photoArray = Array<URL>()
         numberOfPages = Int()
     }
     
     private var latitude: CLLocationDegrees
     private var longitude: CLLocationDegrees
-    var photoArray: Array<URL>
     var numberOfPages: Int
     
     func getLatitude() -> CLLocationDegrees {
@@ -226,14 +185,6 @@ class Client: NSObject {
         self.longitude = lon
     }
     
-    func getPhotos() -> Array<URL> {
-        return self.photoArray
-    }
-    
-    func setPhotos(photoArray: Array<URL>) -> Void {
-        self.photoArray = photoArray
-    }
-    
     func getNumberOfPages() -> Int {
         return self.numberOfPages
     }
@@ -241,5 +192,4 @@ class Client: NSObject {
     func setNumberOfPages(number: Int) {
         self.numberOfPages = number
     }
-
-}
+ }

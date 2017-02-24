@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11201" systemVersion="15G31" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="5iI-oc-2i1">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11201" systemVersion="15G1217" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="5iI-oc-2i1">
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="11161"/>
@@ -98,10 +98,6 @@
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="Mmt-wy-Etk"/>
-                                                <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="tTn-I9-Q0F">
-                                                    <frame key="frameInset" minX="42" minY="42" width="37" height="37"/>
-                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                                </activityIndicatorView>
                                             </subviews>
                                         </view>
                                         <constraints>
@@ -111,7 +107,6 @@
                                             <constraint firstAttribute="bottomMargin" secondItem="Mmt-wy-Etk" secondAttribute="bottom" constant="-8" id="Zeb-3W-a81" userLabel="bottom = Image View.bottom"/>
                                         </constraints>
                                         <connections>
-                                            <outlet property="activityIndicator" destination="tTn-I9-Q0F" id="4xM-qM-Rjb"/>
                                             <outlet property="imageView" destination="Mmt-wy-Etk" id="zap-sW-Z4D"/>
                                         </connections>
                                     </collectionViewCell>
